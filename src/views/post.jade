@@ -1,0 +1,15 @@
+doctype
+html
+	head
+		title NYCDBxBSSA Bulletin Board
+	body
+		h1 Welcome to a NYCDBxBSSA bulletin board
+		h2
+			a(href="/messages") Read messages
+		h2 Post a message
+		form(name="newMessageForm" action="/post" method="post")
+			input(type="text" name="messageTitle" style="width: 400px;" placeholder="Title")
+			br
+			input(type="text" name="messageBody" style="width: 400px;" placeholder="Message")
+			br
+			button(type="submit" id="submitMessageForm" style="width: 400px;") Submit your message

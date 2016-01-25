@@ -1,0 +1,14 @@
+doctype
+html
+	head
+		title NYCDBxBSSA Bulletin Board
+	body
+		h1 Welcome to a NYCDBxBSSA bulletin board
+		h2
+			a(href="/post") Post a message
+		h2 Current messages:
+		ul
+			each message in allMessages
+				div(style="font-size: 14pt; font-weight: bold;")= message.title
+				div(style="padding-left:10px;")= message.body
+				br
