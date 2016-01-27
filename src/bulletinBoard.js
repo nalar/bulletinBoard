@@ -1,5 +1,8 @@
+// SET USER AND PASSWORD FOR THE DATABASE AS ENVIRONMENT VALUES
+
 // Set the several requires
 var express = require('express');
+var sequelize = require('sequelize');
 var jade = require('jade');
 var pg = require('pg');
 var bodyParser = require('body-parser');
@@ -9,45 +12,65 @@ var connectionString = "postgres://postgres:sergtsop@localhost:5432/postgres";
 
 // Settings for express
 app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.set('views','./src/views');
-app.set('view engine','jade');
+app.use(bodyParser.urlencoded({
+	extended: true
+}));
+app.set('views', './src/views');
+app.set('view engine', 'jade');
 
-app.get('/', function(request, response){									// On get request for /
-	response.redirect('/post');												// Redirect to the post page
+// Settings for sequelize
+var Sequelize = require('sequelize');
+var sequelize = new Sequelize('postgres', process.env.PSQL_USERNAME, process.env.PSQL_PASSWORD, {
+	host: 'localhost',
+	dialect: 'postgres',
+	define: {
+		timestamps: false
+	}
 });
 
-app.get('/messages',function(request, response){							// On get request for /messages
-	pg.connect(connectionString, function (err, client, done) {				// Connect to the database
-		if(err){throw err;};												// Error handler
-		client.query('select * from messages', function (err, result) {		// Query the database for * from table messages
-			if(err){throw err;};											// Error handler
-			allMessages = result.rows;										// Define allMessages
-			allMessages = allMessages.reverse();							// Reverse so latest message is on top
-			response.render('messages',{allMessages: allMessages});			// Render messages.jade with variable allMessages passed on
-			done();															// Tell the database client that it's done
-			pg.end();														// End the database connection
+// Define message model for sequelize
+var Message = sequelize.define('message', {
+	title: Sequelize.TEXT,
+	body: Sequelize.TEXT
+})
+
+app.get('/', function(request, response) {
+	response.redirect('/post');
+});
+
+app.get('/messages', function(request, response) {
+	Message.findAll().then(function(messages) {
+		var data = messages.map(function(message) {
+			return {
+				title: message.dataValues.title,
+				body: message.dataValues.body
+			}
+		})
+		allMessages = data.reverse();
+		response.render('messages', {
+			allMessages: allMessages
 		});
+	})
+});
+
+app.get('/post', function(request, response) {
+	response.render('post');
+});
+
+app.post('/post', function(request, response) {
+	messageTitle = request.body.messageTitle;
+	messageBody = request.body.messageBody;
+
+	Message.create({
+		title: messageTitle,
+		body: messageBody
 	});
+
+	response.redirect('/messages');
 });
 
-app.get('/post',function(request, response){								// On get request for /post
-	response.render('post');												// Render post.jade
-});
-
-app.post('/post',function(request, response){								// On post request for /post, define the query string on line 39
-	queryString = 'insert into messages (title, body) values (' +'\'' + request.body.messageTitle + '\',\'' + request.body.messageBody + '\'' + ');';
-	
-	pg.connect(connectionString, function (err, client, done) {				// Connect to the database
-		client.query(queryString, function (err) {							
-			if(err){throw err;};											// Error handler
-			response.redirect('/messages');									// After doing the query, redirect to /messages
-			done();															// Tell the database client that it's done
-			pg.end();														// End the database connection
-		});
+sequelize.sync().then(function() {
+	var server = app.listen(3000, function() {
+		console.log('bulletinBoardSequelized running on localhost:' + server.address().port);
 	});
-});
-
-var server = app.listen(3000, function () {										// Let express listen on port 3000
-	console.log('bulletinBoard running on localhost:' + server.address().port);	// Log that information
 });
